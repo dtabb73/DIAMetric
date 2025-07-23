@@ -266,7 +266,7 @@ namespace DIAMetric
             MS1Runner = this.MS1Table.Next;
             float TICSum = 0f;
             float[] TICArray = new float[this.mzMLMS1Count];
-            float[] RTArray = new float[this.mzMLMSnCount];
+            float[] RTArray = new float[this.mzMLMS1Count];
             int[] PkCountArray = new int[this.mzMLMS1Count];
             int Counter = 0;
             while (MS1Runner != null)
