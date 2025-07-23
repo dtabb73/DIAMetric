@@ -723,16 +723,16 @@ namespace DIAMetric
                 Version = "4.1.186"
             };
             var runs = new List<BaseQuality>();
-            float[] MS1TICQuartileRTs = { LCMSMSRunner.MS1TIC25ileRT, LCMSMSRunner.MS1TIC50ileRT, LCMSMSRunner.MS1TIC75ileRT };
-            double[] SWATHmzRange = { LCMSMSRunner.LoMZRange, LCMSMSRunner.HiMZRange };
-            double[] SWATHWidthRange = { LCMSMSRunner.SWATHNarrowest, LCMSMSRunner.SWATHWidest };
-            float[] SWATHRetentionTimeRangeAtHalfTIC = { LCMSMSRunner.TIC50ileRTMin, LCMSMSRunner.TIC50ileRTMax };
-            float[] SWATHTICSumRange = { LCMSMSRunner.TotalTICMin, LCMSMSRunner.TotalTICMax };
-            int[] SWATHPkCountMedianRange = { LCMSMSRunner.PkCount50ileMin, LCMSMSRunner.PkCount50ileMax };
-            int[] MS1PkCountQuartiles = { LCMSMSRunner.MS1PkCountMin, LCMSMSRunner.MS1PkCount25ile, LCMSMSRunner.MS1PkCount50ile, LCMSMSRunner.MS1PkCount75ile, LCMSMSRunner.MS1PkCountMax };
-            int[] SWATHCycleCountRange = {LCMSMSRunner.SWATHCycleCountMin, LCMSMSRunner.SWATHCycleCountMax};
             while (LCMSMSRunner != null)
             {
+                float[] MS1TICQuartileRTs = { LCMSMSRunner.MS1TIC25ileRT, LCMSMSRunner.MS1TIC50ileRT, LCMSMSRunner.MS1TIC75ileRT };
+                double[] SWATHmzRange = { LCMSMSRunner.LoMZRange, LCMSMSRunner.HiMZRange };
+                double[] SWATHWidthRange = { LCMSMSRunner.SWATHNarrowest, LCMSMSRunner.SWATHWidest };
+                float[] SWATHRetentionTimeRangeAtHalfTIC = { LCMSMSRunner.TIC50ileRTMin, LCMSMSRunner.TIC50ileRTMax };
+                float[] SWATHTICSumRange = { LCMSMSRunner.TotalTICMin, LCMSMSRunner.TotalTICMax };
+                int[] SWATHPkCountMedianRange = { LCMSMSRunner.PkCount50ileMin, LCMSMSRunner.PkCount50ileMax };
+                int[] MS1PkCountQuartiles = { LCMSMSRunner.MS1PkCountMin, LCMSMSRunner.MS1PkCount25ile, LCMSMSRunner.MS1PkCount50ile, LCMSMSRunner.MS1PkCount75ile, LCMSMSRunner.MS1PkCountMax };
+                int[] SWATHCycleCountRange = { LCMSMSRunner.SWATHCycleCountMin, LCMSMSRunner.SWATHCycleCountMax };
                 //Why does FileFormat write a null "value" field?
                 var run = new BaseQuality
                 {
