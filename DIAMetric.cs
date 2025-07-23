@@ -12,12 +12,12 @@ namespace DIAMetric
     {
         static void Main(string[] args)
         {
-            const string Version = "20250417 beta";
+            const string Version = "20250723 beta";
             // Use periods to separate decimals
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             Console.WriteLine("DIAMetric: Quality metrics for Data-Independent Acquisition experiments");
             Console.WriteLine("David L. Tabb, ERIBA of University Medical Center of Groningen");
-            Console.WriteLine("Version ", Version);
+            Console.WriteLine("Version " + Version);
             //Console.WriteLine("--DIANN: read report.pr_matrix.tsv peptide matrix");
 
             var ReadDIANN = false;
@@ -74,6 +74,7 @@ namespace DIAMetric
             RawsRunner = Raws.Next;
             while (RawsRunner != null)
             {
+                Console.WriteLine("\t\t" + RawsRunner.SourceFile);
                 RawsRunner.ComputeMS1Metrics();
                 RawsRunner.ComputeMetricsForSwaths();
                 RawsRunner = RawsRunner.Next;
@@ -84,7 +85,7 @@ namespace DIAMetric
 
             Console.WriteLine("\nWriting DIAMetric TSV reports...");
             Raws.WriteTextQCReport();
-            Console.WriteLine("Writing DIAMetric.mzQC.json...");
+            Console.WriteLine("Writing DIAMetric.mzQC...");
             Raws.WriteMZQCReport(Version);
             Timer.Stop();
             Duration = Timer.Elapsed;
@@ -285,31 +286,34 @@ namespace DIAMetric
             float TICSoFar = 0;
             float TICAfterThisScan = 0;
             int PkCountIndex = 0;
-            float[] CycleTimes = new float[this.mzMLMS1Count - 1];
-            float LastScanStartTime = 0;
-            MS1Runner = this.MS1Table.Next;
-            while (MS1Runner != null)
+            if (this.mzMLMS1Count > 0)
             {
-                TICAfterThisScan = TICSoFar + MS1Runner.TIC;
-                if ((TIC25 > TICSoFar) && (TIC25 <= TICAfterThisScan)) this.MS1TIC25ileRT = MS1Runner.ScanStartTime;
-                if ((TIC50 > TICSoFar) && (TIC50 <= TICAfterThisScan)) this.MS1TIC50ileRT = MS1Runner.ScanStartTime;
-                if ((TIC75 > TICSoFar) && (TIC75 <= TICAfterThisScan)) this.MS1TIC75ileRT = MS1Runner.ScanStartTime;
-                TICSoFar = TICAfterThisScan;
-                if (PkCountIndex > 0) CycleTimes[PkCountIndex - 1] = MS1Runner.ScanStartTime - LastScanStartTime;
-                PkCountIndex++;
-                LastScanStartTime = MS1Runner.ScanStartTime;
-                MS1Runner = MS1Runner.Next;
+                float[] CycleTimes = new float[this.mzMLMS1Count - 1];
+                float LastScanStartTime = 0;
+                MS1Runner = this.MS1Table.Next;
+                while (MS1Runner != null)
+                {
+                    TICAfterThisScan = TICSoFar + MS1Runner.TIC;
+                    if ((TIC25 > TICSoFar) && (TIC25 <= TICAfterThisScan)) this.MS1TIC25ileRT = MS1Runner.ScanStartTime;
+                    if ((TIC50 > TICSoFar) && (TIC50 <= TICAfterThisScan)) this.MS1TIC50ileRT = MS1Runner.ScanStartTime;
+                    if ((TIC75 > TICSoFar) && (TIC75 <= TICAfterThisScan)) this.MS1TIC75ileRT = MS1Runner.ScanStartTime;
+                    TICSoFar = TICAfterThisScan;
+                    if (PkCountIndex > 0) CycleTimes[PkCountIndex - 1] = MS1Runner.ScanStartTime - LastScanStartTime;
+                    PkCountIndex++;
+                    LastScanStartTime = MS1Runner.ScanStartTime;
+                    MS1Runner = MS1Runner.Next;
+                }
+                Array.Sort(TICArray);
+                Array.Sort(PkCountArray);
+                Array.Sort(CycleTimes);
+                this.MS1PkCountMin = PkCountArray[0];
+                this.MS1PkCount25ile = PkCountArray[this.mzMLMS1Count / 4];
+                this.MS1PkCount50ile = PkCountArray[this.mzMLMS1Count / 2];
+                this.MS1PkCount75ile = PkCountArray[(this.mzMLMS1Count / 4) + (this.mzMLMS1Count / 2)];
+                this.MS1PkCountMax = PkCountArray[this.mzMLMS1Count - 1];
+                //We multiply by 60 to get seconds from minutes.
+                this.MS1CycleTime = 60 * CycleTimes[this.mzMLMS1Count / 2];
             }
-            Array.Sort(TICArray);
-            Array.Sort(PkCountArray);
-            Array.Sort(CycleTimes);
-            this.MS1PkCountMin = PkCountArray[0];
-            this.MS1PkCount25ile = PkCountArray[this.mzMLMS1Count / 4];
-            this.MS1PkCount50ile = PkCountArray[this.mzMLMS1Count / 2];
-            this.MS1PkCount75ile = PkCountArray[(this.mzMLMS1Count / 4) + (this.mzMLMS1Count / 2)];
-            this.MS1PkCountMax = PkCountArray[this.mzMLMS1Count - 1];
-            //We multiply by 60 to get seconds from minutes.
-            this.MS1CycleTime = 60 * CycleTimes[this.mzMLMS1Count / 2];
         }
 
         public void ComputeMetricsForSwaths()
@@ -514,6 +518,7 @@ namespace DIAMetric
                             case "MS:1003094":
                             case "MS:1003123":
                             case "MS:1003293":
+			    case "MS:1003356":
                                 Instrument = Xread.GetAttribute("name");
                                 break;
                             case "MS:1000529":
@@ -733,7 +738,8 @@ namespace DIAMetric
                 {
                     Metadata = new Metadata
                     {
-                        AnalysisSoftware = [new AnalysisSoftwareElement { Accession = "MS:NeedCVTerm", Name = "DIAMetric",
+                        Label = LCMSMSRunner.SourceFile,
+                        AnalysisSoftware = [new AnalysisSoftwareElement { Accession = "MS:4000189", Name = "DIAMetric",
                             Value = "Data-Independent Acquisition QC Metric Generator", Uri = new Uri("https://github.com/dtabb73/DIAMetric"), Version=Version}],
                         InputFiles = [ new InputFile { Name = LCMSMSRunner.SourceFile,
                             Location = LCMSMSRunner.FileURI,
@@ -786,7 +792,7 @@ namespace DIAMetric
                 );
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    Accession = "MS:NeedCVTerm",
+                    Accession = "MS:4000190",
                     Name = "The retention times at which 25%, 50%, and 75% of MS1 TIC have been accumulated",
                     Value = MS1TICQuartileRTs
                 }
@@ -800,7 +806,7 @@ namespace DIAMetric
                 );
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    Accession = "MS:NeedCVTerm",
+                    Accession = "MS:4000192",
                     Name = "The median cycle time between MS1 measurements",
                     Value = LCMSMSRunner.MS1CycleTime
                 }
@@ -814,52 +820,49 @@ namespace DIAMetric
                 );
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    Accession = "MS:NeedCVTerm",
+                    Accession = "MS:4000194",
                     Name = "Count of isolation windows in this DIA method",
                     Value = LCMSMSRunner.SWATHCount
                 }
                 );
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    Accession = "MS:NeedCVTerm",
+                    Accession = "MS:4000196",
                     Name = "Range of MS/MS measurements per isolation window in this DIA method",
                     Value = SWATHCycleCountRange
                 }
                 );
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    Accession = "MS:MS:1003159",
+                    Accession = "MS:1003159",
                     Name = "Range of lowest m/z in lowest isolation window to highest m/z of highest isolation window in this DIA method",
                     Value = SWATHmzRange
                 }
                 );
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    Accession = "MS:NeedCVTerm",
+                    Accession = "MS:4000195",
                     Name = "Range of isolation window widths in this DIA method",
                     Value = SWATHWidthRange
                 }
                 );
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    // TODO: Bogus output
-                    Accession = "MS:NeedCVTerm",
+                    Accession = "MS:4000197",
                     Name = "The range of retention times at half TIC among isolation windows",
                     Value = SWATHRetentionTimeRangeAtHalfTIC
                 }
                 );
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    // TODO: Bogus output
-                    Accession = "MS:NeedCVTerm",
+                    Accession = "MS:4000198",
                     Name = "The range of TIC sums among isolation windows",
                     Value = SWATHTICSumRange
                 }
                 );
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    // TODO: Bogus output
-                    Accession = "MS:NeedCVTerm",
+                    Accession = "MS:4000199",
                     Name = "The range of Peak Count medians among isolation windows",
                     Value = SWATHPkCountMedianRange
                 }
@@ -940,13 +943,13 @@ namespace DIAMetric
                 });
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    Accession = "MS:NeedCVTerm",
+                    Accession = "MS:4000193",
                     Name = "The median cycle time between MS2 measurements for each isolation window",
                     Value = MedianCycleTimes
                 });
                 run.QualityMetrics.Add(new QualityMetric
                 {
-                    Accession = "MS:NeedCVTerm",
+                    Accession = "MS:4000191",
                     Name = "The retention times at which 25%, 50%, and 75% of MS2 TIC have been accumulated for each isolation window",
                     Value = RetentionTimesAtQuartilesOfTIC
                 });
@@ -974,7 +977,7 @@ namespace DIAMetric
                 RunQualities = runs
             };
             var file = new Mzqc { MzqcContent = mzqc };
-            File.WriteAllText(@"DIAMetric.mzqc.json", file.ToJson());
+            File.WriteAllText(@"DIAMetric.mzqc", file.ToJson());
         }
 
         public void WriteTextQCReport()
